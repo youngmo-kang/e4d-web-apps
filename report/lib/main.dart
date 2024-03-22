@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,34 @@ class MyWidget extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<MyWidget> {
+  List<List<dynamic>> rowsOfColumns = [];
+
+  bool _isValidCsv(List<List<dynamic>> content) {
+    if (content.length < 3) return false;
+    return true;
+  }
+
+  void _pickFile() async {
+    var picked = await FilePicker.platform.pickFiles();
+
+    if (picked != null && picked.files.first.bytes != null) {
+      var file = picked.files.first;
+      var content =
+          const CsvToListConverter(eol: '\n').convert(utf8.decode(file.bytes!).replaceAll('\r\n', '\n'));
+      if (_isValidCsv(content)) {
+        rowsOfColumns = content;
+      } else {
+        rowsOfColumns = [];
+      }
+    }
+    if (rowsOfColumns.isEmpty) {
+      // TODO: fix context warning
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload a valid CSV file with a header and at least one record')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,34 +66,16 @@ class _MyWidgetState extends State<MyWidget> {
           'E4D Autocomplete Report Generation',
         ),
       ),
-      body: const Row(
+      body: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FileUploadButton(),
+          ElevatedButton(
+            onPressed: _pickFile,
+            child: const Text('UPLOAD FILE'),
+          ),
         ],
       ),
-    );
-  }
-}
-
-class FileUploadButton extends StatelessWidget {
-  const FileUploadButton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      child: const Text('UPLOAD FILE'),
-      onPressed: () async {
-        var picked = await FilePicker.platform.pickFiles();
-
-        if (picked != null && picked.files.first.bytes != null) {
-          var file = picked.files.first;
-          var content = utf8.decode(file.bytes!);
-          var rowsOfColumns = const CsvToListConverter().convert(content);
-          print("${rowsOfColumns[0]}");
-        } else {}
-      },
     );
   }
 }
