@@ -29,7 +29,9 @@ class MyWidget extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<MyWidget> {
-  List<List<dynamic>> rowsOfColumns = [];
+  List<List<dynamic>> _rowsOfColumns = [];
+  String _colName = "";
+  String _fileName = "";
 
   bool _isValidCsv(List<List<dynamic>> content) {
     if (content.length < 3) return false;
@@ -41,20 +43,39 @@ class _MyWidgetState extends State<MyWidget> {
 
     if (picked != null && picked.files.first.bytes != null) {
       var file = picked.files.first;
-      var content =
-          const CsvToListConverter(eol: '\n').convert(utf8.decode(file.bytes!).replaceAll('\r\n', '\n'));
-      if (_isValidCsv(content)) {
-        rowsOfColumns = content;
-      } else {
-        rowsOfColumns = [];
-      }
+      var content = const CsvToListConverter(eol: '\n')
+          .convert(utf8.decode(file.bytes!).replaceAll('\r\n', '\n'));
+      setState(() {
+        if (_isValidCsv(content)) {
+          _rowsOfColumns = content;
+          _fileName = file.name;
+        } else {
+          _rowsOfColumns = [];
+          _fileName = "";
+        }
+      });
     }
-    if (rowsOfColumns.isEmpty) {
-      // TODO: fix context warning
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please upload a valid CSV file with a header and at least one record')),
-      );
+    if (_rowsOfColumns.isEmpty) {
+      _error(
+          'Please upload a valid CSV file with a header and at least one record');
     }
+  }
+
+  void _generate() {
+    bool err = _colName.isEmpty ||
+        _rowsOfColumns.isEmpty ||
+        !_rowsOfColumns[0].contains(_colName);
+
+    if (err) {
+      _error(
+          'Make sure to upload a csv and indicate which column corresponds to the input requests');
+    }
+  }
+
+  _error(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   @override
@@ -66,13 +87,46 @@ class _MyWidgetState extends State<MyWidget> {
           'E4D Autocomplete Report Generation',
         ),
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          ElevatedButton(
-            onPressed: _pickFile,
-            child: const Text('UPLOAD FILE'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: _pickFile,
+                child: const Text('Upload input csv file'),
+              ),
+              const SizedBox(
+                width: 20,
+              ),
+              Text(_fileName),
+            ],
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("Input column: "),
+              SizedBox(
+                height: 24,
+                width: 128,
+                child: TextField(
+                  onChanged: (value) => _colName = value,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          Center(
+            child: ElevatedButton(
+              onPressed: _generate,
+              child: const Text('Generate report'),
+            ),
           ),
         ],
       ),
