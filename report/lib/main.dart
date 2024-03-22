@@ -31,7 +31,7 @@ class MyWidget extends StatefulWidget {
 class _MyWidgetState extends State<MyWidget> {
   List<List<dynamic>> _rowsOfColumns = [];
   String _colName = "";
-  String _fileName = "";
+  String _fileName = "not uploaded";
 
   bool _isValidCsv(List<List<dynamic>> content) {
     if (content.length < 3) return false;
@@ -51,7 +51,7 @@ class _MyWidgetState extends State<MyWidget> {
           _fileName = file.name;
         } else {
           _rowsOfColumns = [];
-          _fileName = "";
+          _fileName = "not uploaded";
         }
       });
     }
@@ -106,18 +106,16 @@ class _MyWidgetState extends State<MyWidget> {
           const SizedBox(
             height: 24,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text("Input column: "),
-              SizedBox(
-                height: 24,
-                width: 128,
-                child: TextField(
-                  onChanged: (value) => _colName = value,
-                ),
+          SizedBox(
+            height: 40,
+            width: 128,
+            child: TextField(
+              onChanged: (value) => _colName = value,
+              decoration: const InputDecoration(
+                labelText: 'Input column:',
+                border: OutlineInputBorder(),
               ),
-            ],
+            ),
           ),
           const SizedBox(
             height: 24,
