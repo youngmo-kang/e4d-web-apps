@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:csv/csv.dart';
 
 void main() {
   runApp(const ReportApp());
@@ -55,9 +58,11 @@ class FileUploadButton extends StatelessWidget {
       onPressed: () async {
         var picked = await FilePicker.platform.pickFiles();
 
-        if (picked != null) {
+        if (picked != null && picked.files.first.bytes != null) {
           var file = picked.files.first;
-          print('${file.bytes}');
+          var content = utf8.decode(file.bytes!);
+          var rowsOfColumns = const CsvToListConverter().convert(content);
+          print("${rowsOfColumns[0]}");
         } else {}
       },
     );
