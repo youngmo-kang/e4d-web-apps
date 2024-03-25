@@ -29,8 +29,11 @@ class MyWidget extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<MyWidget> {
+  // holds user uploaded csv
   List<List<dynamic>> _rowsOfColumns = [];
+  // column name that contains the request
   String _colName = "";
+  // uploaded file name to display to the user
   String _fileName = "not uploaded";
 
   bool _isValidCsv(List<List<dynamic>> content) {
@@ -38,6 +41,7 @@ class _MyWidgetState extends State<MyWidget> {
     return true;
   }
 
+  // updates _fileName and _rowsOfColumns
   void _pickFile() async {
     var picked = await FilePicker.platform.pickFiles();
 
@@ -50,6 +54,7 @@ class _MyWidgetState extends State<MyWidget> {
           _rowsOfColumns = content;
           _fileName = file.name;
         } else {
+          // not uploaded
           _rowsOfColumns = [];
           _fileName = "not uploaded";
         }
@@ -61,6 +66,7 @@ class _MyWidgetState extends State<MyWidget> {
     }
   }
 
+  // generate report
   void _generate() {
     bool err = _colName.isEmpty ||
         _rowsOfColumns.isEmpty ||
