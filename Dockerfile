@@ -14,6 +14,7 @@ RUN flutter channel master
 RUN flutter upgrade
 
 COPY report /app/report
+RUN rm -rf /app/report/build
 
 WORKDIR /app/report/
 RUN flutter build web --release --web-renderer canvaskit
