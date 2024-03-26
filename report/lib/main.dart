@@ -32,13 +32,15 @@ class _MyWidgetState extends State<MyWidget> {
   // holds user uploaded csv
   List<List<dynamic>> _rowsOfColumns = [];
   // column name that contains the request
-  final _colNameController = TextEditingController(text: "input");
+  final _colNameController = TextEditingController(text: "prompt");
   // uploaded file name to display to the user
-  String _fileName = "not uploaded";
+  String _fileName = "not selected";
   final _endpointController =
       TextEditingController(text: "http://localhost:8000/blockgen");
   final _reportFilenameController = TextEditingController(text: "report.csv");
   String _userLog = '';
+  final _sampleBlockgenInput =
+      "id,prompt\r\n0,Implement quick sort in Rust\r\n1,Implement binary search in Go\r\n";
 
   bool _isValidCsv(List<List<dynamic>> content) {
     if (content.length < 3) return false;
@@ -57,16 +59,16 @@ class _MyWidgetState extends State<MyWidget> {
 
     if (picked != null && picked.files.first.bytes != null) {
       var file = picked.files.first;
-      var content = const CsvToListConverter(eol: '\n')
-          .convert(utf8.decode(file.bytes!).replaceAll('\r\n', '\n'));
+      var content =
+          const CsvToListConverter().convert(utf8.decode(file.bytes!));
       setState(() {
         if (_isValidCsv(content)) {
-          _log('${file.name} is a valid CSV');
+          _log("'${file.name}' is a valid CSV");
           _rowsOfColumns = content;
           _fileName = file.name;
         } else {
           // not uploaded
-          _log('${file.name} is a NOT valid CSV');
+          _log("'${file.name}' is a NOT valid CSV");
           _rowsOfColumns = [];
           _fileName = "not uploaded";
         }
@@ -96,25 +98,28 @@ class _MyWidgetState extends State<MyWidget> {
     return responses;
   }
 
-  void _createAndDownloadFile(String text) {
+  void _createAndDownloadFile(String text, String filename) {
     final bytes = utf8.encode(text);
     final blob = html.Blob([bytes]);
     final url = html.Url.createObjectUrlFromBlob(blob);
     html.AnchorElement(href: url)
-      ..setAttribute('download', _reportFilenameController.text)
+      ..setAttribute('download', filename)
       ..click();
-    _log("Done! ${_reportFilenameController.text} has been downloaded");
+    html.Url.revokeObjectUrl(url);
+    _log("'$filename' has been downloaded");
   }
 
   // generate report
   void _generate() async {
     final colName = _colNameController.text;
-    bool err = colName.isEmpty ||
-        _rowsOfColumns.isEmpty ||
-        !_rowsOfColumns[0].contains(colName);
-    if (err) {
-      return _error(
-          'Make sure to upload a csv and indicate which column corresponds to the input requests');
+    if (colName.isEmpty) {
+      return _error("Column name can't be empty");
+    }
+    if (_rowsOfColumns.isEmpty) {
+      return _error("Input csv file can't be empty");
+    }
+    if (!_rowsOfColumns[0].contains(colName)) {
+      return _error("Colunm '$colName' not found in '$_fileName'");
     }
 
     final colIdx = _rowsOfColumns[0].indexOf(colName);
@@ -133,8 +138,8 @@ class _MyWidgetState extends State<MyWidget> {
           result[ix].add(responses[ix - 1]);
         }
 
-        final csv = const ListToCsvConverter(eol: "\n").convert(result);
-        _createAndDownloadFile(csv);
+        final csv = const ListToCsvConverter().convert(result);
+        _createAndDownloadFile(csv, _reportFilenameController.text);
       });
     } catch (e) {
       return _error(e.toString());
@@ -154,7 +159,7 @@ class _MyWidgetState extends State<MyWidget> {
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: const Text(
-          'E4D Autocomplete Report Generation',
+          'E4D Blockgen Report Generation',
         ),
       ),
       body: Column(
@@ -175,6 +180,20 @@ class _MyWidgetState extends State<MyWidget> {
                 width: 20,
               ),
               Text(_fileName),
+              const SizedBox(
+                width: 20,
+              ),
+              GestureDetector(
+                child: const Text(
+                  "sample_input.csv",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+                onTap: () => _createAndDownloadFile(
+                    _sampleBlockgenInput, "sample_input.csv"),
+              )
             ],
           ),
           const SizedBox(
