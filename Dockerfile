@@ -13,11 +13,17 @@ RUN flutter doctor -v
 RUN flutter channel master
 RUN flutter upgrade
 
-COPY report /app
+COPY report /app/report
 
-WORKDIR /app/
-RUN flutter build web
+WORKDIR /app/report/
+RUN flutter build web --release
 
 # Stage 2 - Create the run-time image
 FROM nginx:1.21.1-alpine
-COPY --from=build-env /app/build/web /usr/share/nginx/html
+RUN apk add --no-cache python3 py3-pip
+COPY --from=build-env /app/report/build/web /usr/share/nginx/html
+COPY proxy /app/proxy
+COPY default.conf /etc/nginx/conf.d/
+WORKDIR /app/proxy
+RUN sh -c "pip3 install -r requirements.txt"
+CMD ["sh", "-c", "uvicorn server:app & nginx -g 'daemon off;'"]
