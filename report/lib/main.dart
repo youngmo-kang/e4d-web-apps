@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:csv/csv.dart';
+import 'package:universal_html/html.dart' as html;
 
 void main() {
   runApp(const ReportApp());
@@ -35,11 +36,19 @@ class _MyWidgetState extends State<MyWidget> {
   // uploaded file name to display to the user
   String _fileName = "not uploaded";
   final _endpointController =
-      TextEditingController(text: "http://localhost:8080/predictions/blockgen");
+      TextEditingController(text: "http://localhost:8000/blockgen");
+  final _reportFilenameController = TextEditingController(text: "report.csv");
+  String _userLog = '';
 
   bool _isValidCsv(List<List<dynamic>> content) {
     if (content.length < 3) return false;
     return true;
+  }
+
+  void _log(String text) {
+    setState(() {
+      _userLog = '${DateTime.now()}: $text\n$_userLog';
+    });
   }
 
   // updates _fileName and _rowsOfColumns
@@ -52,10 +61,12 @@ class _MyWidgetState extends State<MyWidget> {
           .convert(utf8.decode(file.bytes!).replaceAll('\r\n', '\n'));
       setState(() {
         if (_isValidCsv(content)) {
+          _log('${file.name} is a valid CSV');
           _rowsOfColumns = content;
           _fileName = file.name;
         } else {
           // not uploaded
+          _log('${file.name} is a NOT valid CSV');
           _rowsOfColumns = [];
           _fileName = "not uploaded";
         }
@@ -69,7 +80,8 @@ class _MyWidgetState extends State<MyWidget> {
 
   Future<List<String>> _postRequest(Uri endpoint, List<String> bodies) async {
     List<String> responses = [];
-    for (var body in bodies) {
+    for (final (idx, body) in bodies.indexed) {
+      _log("Querying input ${idx + 1} out of ${bodies.length}...");
       var response = await http.post(endpoint,
           headers: {
             "Content-Type": "application/json",
@@ -82,6 +94,16 @@ class _MyWidgetState extends State<MyWidget> {
       }
     }
     return responses;
+  }
+
+  void _createAndDownloadFile(String text) {
+    final bytes = utf8.encode(text);
+    final blob = html.Blob([bytes]);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', _reportFilenameController.text)
+      ..click();
+    _log("Done! ${_reportFilenameController.text} has been downloaded");
   }
 
   // generate report
@@ -110,6 +132,9 @@ class _MyWidgetState extends State<MyWidget> {
         for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
           result[ix].add(responses[ix - 1]);
         }
+
+        final csv = const ListToCsvConverter(eol: "\n").convert(result);
+        _createAndDownloadFile(csv);
       });
     } catch (e) {
       return _error(e.toString());
@@ -117,6 +142,7 @@ class _MyWidgetState extends State<MyWidget> {
   }
 
   void _error(String msg) {
+    _log(msg);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg)),
     );
@@ -133,7 +159,11 @@ class _MyWidgetState extends State<MyWidget> {
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          const SizedBox(
+            height: 24,
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -201,10 +231,41 @@ class _MyWidgetState extends State<MyWidget> {
           const SizedBox(
             height: 24,
           ),
+          SizedBox(
+            width: 256,
+            child: Form(
+              child: TextFormField(
+                autovalidateMode: AutovalidateMode.always,
+                controller: _reportFilenameController,
+                validator: (String? value) {
+                  return value != null &&
+                          RegExp(r'^[a-zA-Z0-9_.-]+$').hasMatch(value)
+                      ? null
+                      : "not a valid filename";
+                },
+                decoration: const InputDecoration(
+                  labelText: 'Report filename',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(
+            height: 24,
+          ),
           Center(
             child: ElevatedButton(
               onPressed: _generate,
               child: const Text('Generate report'),
+            ),
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: Text(_userLog),
             ),
           ),
         ],
