@@ -88,7 +88,7 @@ class _MyWidgetState extends State<MyWidget> {
           headers: {
             "Content-Type": "application/json",
           },
-          body: json.encode({"inputPrompt": body}));
+          body: json.encode({"inputPrompt": body, "keep-only-code": false}));
       if (response.statusCode == 200) {
         responses.add(response.body);
       } else {
