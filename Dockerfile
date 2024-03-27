@@ -13,12 +13,12 @@ RUN flutter doctor -v
 RUN flutter channel master
 RUN flutter upgrade
 
-COPY report /app/report
-RUN rm -rf /app/report/build
+COPY app /app
+RUN rm -rf /app/build
 
-WORKDIR /app/report/
+WORKDIR /app
 RUN flutter build web --release --web-renderer canvaskit
 
 # Stage 2 - Create the run-time image
 FROM nginx:alpine
-COPY --from=build-env /app/report/build/web /usr/share/nginx/html
+COPY --from=build-env /app/build/web /usr/share/nginx/html

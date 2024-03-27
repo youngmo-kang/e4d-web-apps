@@ -36,7 +36,7 @@ class _MyWidgetState extends State<MyWidget> {
   // uploaded file name to display to the user
   String _fileName = "not selected";
   final _endpointController =
-      TextEditingController(text: "http://localhost:8000/blockgen");
+      TextEditingController(text: "http://34.30.21.14:8000/blockgen");
   final _reportFilenameController = TextEditingController(text: "report.csv");
   String _userLog = '';
   final _sampleBlockgenInput =

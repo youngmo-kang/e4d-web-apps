@@ -22,8 +22,7 @@ spec:
       image: "gcr.io/salesforce-research-internal/ALIAS/e4d-report"
       command: ["/bin/sh", "-c"]
       args:
-        - uvicorn server:app --host 0.0.0.0
-          & nginx -g 'daemon off;'
+        - nginx -g 'daemon off;'
       resources:
         requests:
           cpu: "7"

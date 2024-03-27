@@ -11,12 +11,9 @@ spec:
     app_name: ALIAS-e4d-report
   type: LoadBalancer
   ports:
-  - port: 8080
+  - port: 80
     targetPort: 80
     name: front-end
-  - port: 8000
-    targetPort: 8000
-    name: proxy
   loadBalancerSourceRanges: #Limits access to VPN, remove this ONLY if your service needs to be exposed to the public internet.
   - "13.110.54.0/24"    #amer_west1
   - "204.14.236.0/24"   #amer_east

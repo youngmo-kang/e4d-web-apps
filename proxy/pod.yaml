@@ -18,7 +18,7 @@ spec:
             - standard8  #Pod gets scheduled on 8 CPUs node
   containers:
     - name: decanlp
-      workingDir: /app/proxy
+      workingDir: /app
       image: "gcr.io/salesforce-research-internal/ALIAS/proxy"
       command: ["/bin/sh", "-c"]
       args:
