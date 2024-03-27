@@ -1,0 +1,51 @@
+#
+# Create a load balancer service to route requests to vLLM inference service
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: sfr-service-ALIAS-proxy
+  namespace: sfr-ns-ALIAS
+spec:
+  selector:
+    app_name: ALIAS-proxy
+  type: LoadBalancer
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: proxy
+  loadBalancerSourceRanges: #Limits access to VPN, remove this ONLY if your service needs to be exposed to the public internet.
+  - "13.110.54.0/24"    #amer_west1
+  - "204.14.236.0/24"   #amer_east
+  - "104.161.246.32/29" #apac_ind
+  - "104.161.242.32/29" #apac_jpn
+  - "104.161.244.32/29" #apac_aus
+  - "85.222.134.0/26"   #emea1_vpn
+  - "66.203.114.32/29"  #sea3_vpn
+  - "10.136.0.0/14" #Add this if your service needs to be consumed by other pods
+  - "10.144.0.0/14" #Add this if your service needs to be consumed by other pods
+  - "104.154.83.211/32"
+  - "34.121.150.75/32"
+  - "35.188.15.104/32"
+  - "35.226.164.8/32"
+  - "35.222.252.30/32"
+  - "35.238.194.110/32"
+  - "34.71.61.217/32"
+  - "35.202.229.106/32"
+  - "35.188.30.55/32"
+  - "35.225.25.1/32"
+  - "104.198.28.114/32"
+  - "35.238.207.218/32"
+  - "34.123.92.179/32"
+  - 34.70.252.46/32
+  - 34.67.194.60/32
+  - 104.161.242.0/24
+  - 85.222.134.0/24
+  - 104.161.246.0/24
+  - 104.161.244.0/24
+  - 204.14.236.128/25
+  - 104.161.242.32/29
+  - 13.110.54.0/26
+  - 34.111.117.233/32
+
+

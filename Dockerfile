@@ -21,10 +21,4 @@ RUN flutter build web --release --web-renderer canvaskit
 
 # Stage 2 - Create the run-time image
 FROM nginx:alpine
-RUN apk add --no-cache python3 py3-pip
 COPY --from=build-env /app/report/build/web /usr/share/nginx/html
-COPY proxy /app/proxy
-COPY default.conf /etc/nginx/conf.d/
-WORKDIR /app/proxy
-RUN sh -c "pip3 install -r requirements.txt"
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 & nginx -g 'daemon off;'"]

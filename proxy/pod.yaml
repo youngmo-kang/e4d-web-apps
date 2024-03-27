@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sfr-pod-ALIAS-proxy
+  namespace: sfr-ns-ALIAS
+  labels:
+    app_name: ALIAS-proxy
+spec:
+  restartPolicy: OnFailure
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: sfr-node-type
+            operator: In
+            values:
+            - standard8  #Pod gets scheduled on 8 CPUs node
+  containers:
+    - name: decanlp
+      workingDir: /app/proxy
+      image: "gcr.io/salesforce-research-internal/ALIAS/proxy"
+      command: ["/bin/sh", "-c"]
+      args:
+        - uvicorn server:app --host 0.0.0.0
+      resources:
+        requests:
+          cpu: "7"
+          memory: 26G
+        limits:
+          cpu: "7"
+          memory: 26G
