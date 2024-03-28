@@ -35,8 +35,7 @@ class _MyWidgetState extends State<MyWidget> {
   final _colNameController = TextEditingController(text: "prompt");
   // uploaded file name to display to the user
   String _fileName = "not selected";
-  final _endpointController =
-      TextEditingController(text: "http://34.30.21.14:8000/blockgen");
+  final _endpiont = "/blockgen";
   final _reportFilenameController = TextEditingController(text: "report.csv");
   String _userLog = '';
   final _sampleBlockgenInput =
@@ -92,7 +91,9 @@ class _MyWidgetState extends State<MyWidget> {
       if (response.statusCode == 200) {
         responses.add(response.body);
       } else {
-        throw Exception('Failed to post\n$body');
+        const msg = 'Failed to query';
+        _error(msg);
+        throw Exception(msg);
       }
     }
     return responses;
@@ -130,8 +131,7 @@ class _MyWidgetState extends State<MyWidget> {
     }
 
     try {
-      _postRequest(Uri.parse(_endpointController.text), bodies)
-          .then((responses) {
+      _postRequest(Uri.parse(_endpiont), bodies).then((responses) {
         List<List<dynamic>> result = List.from(_rowsOfColumns);
         result[0].add("output");
         for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
@@ -217,33 +217,6 @@ class _MyWidgetState extends State<MyWidget> {
                       ? "not a valid column name"
                       : null;
                 },
-              ),
-            ),
-          ),
-          const SizedBox(
-            height: 24,
-          ),
-          SizedBox(
-            width: 512,
-            child: Form(
-              child: TextFormField(
-                autovalidateMode: AutovalidateMode.always,
-                controller: _endpointController,
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return "not a valid endpoint";
-                  }
-                  try {
-                    Uri.parse(value);
-                  } catch (_) {
-                    return "not a valid endpoint";
-                  }
-                  return null;
-                },
-                decoration: const InputDecoration(
-                  labelText: 'Endpoint',
-                  border: OutlineInputBorder(),
-                ),
               ),
             ),
           ),

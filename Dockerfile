@@ -22,3 +22,4 @@ RUN flutter build web --release --web-renderer canvaskit
 # Stage 2 - Create the run-time image
 FROM nginx:alpine
 COPY --from=build-env /app/build/web /usr/share/nginx/html
+COPY default.conf /etc/nginx/conf.d/default.conf
