@@ -72,7 +72,11 @@ class _BlockGenState extends State<BlockGen> {
           headers: {
             "Content-Type": "application/json",
           },
-          body: json.encode({"inputPrompt": body, "keep-only-code": false}));
+          body: json.encode({
+            "inputPrompt": body,
+            "keep-only-code": false,
+            "maxOutputToken": 1024,
+          }));
       if (response.statusCode == 200) {
         responses.add(response.body);
       } else {
