@@ -25,7 +25,7 @@ class ReportApp extends StatelessWidget {
                   Tab(text: "Autocomplete"),
                 ],
               ),
-              title: const Text("E4D Repor Generation"),
+              title: const Text("E4D Report Generation"),
             ),
             body: const TabBarView(
               children: [
