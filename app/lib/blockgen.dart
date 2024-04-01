@@ -21,13 +21,14 @@ class _BlockGenState extends State<BlockGen> {
   // uploaded file name to display to the user
   String _fileName = "not selected";
   final _endpiont = "/blockgen";
-  final _reportFilenameController = TextEditingController(text: "blockgen-report.csv");
+  final _reportFilenameController =
+      TextEditingController(text: "blockgen-report.csv");
   String _userLog = '';
   final _sampleBlockgenInput =
       "id,prompt\r\n0,Implement quick sort in Rust\r\n1,Implement binary search in Go\r\n";
 
   bool _isValidCsv(List<List<dynamic>> content) {
-    if (content.length < 3) return false;
+    if (content.length < 2) return false; // at least one header and one body
     return true;
   }
 

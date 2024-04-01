@@ -15,7 +15,7 @@ class AutoComplete extends StatefulWidget {
 
 class _AutoCompleteState extends State<AutoComplete> {
   // holds user uploaded csv
-  List<List<dynamic>> _rowsOfColumns = [];
+  List<List<String>> _rowsOfColumns = [];
   // columns that contains the request
   // both prefix and suffix
   final _codeController = TextEditingController(text: "code");
@@ -30,8 +30,10 @@ class _AutoCompleteState extends State<AutoComplete> {
   final _sampleAutocompleteInput =
       'id,code,filename\r\n0,"// print hello world\ndef main(): <|CURSOR|>\nif __name__ == \'__main__\':\n    main()",main.py\r\n1,"public with sharing class User {\n    public String name;\n    public User(String name) {\n        this.name = name;\n    }\n\n    public static getUsers() {\n        <|CURSOR|>\n    }\n}",User.cls';
 
-  bool _isValidCsv(List<List<dynamic>> content) {
-    if (content.length < 3) return false;
+  bool _isValidCsv(List<List<String>> content) {
+    if (content.length < 2) return false; // at least one header and one body
+    if (content[0].length < 3)
+      return false; // at least code and filename columns
     return true;
   }
 
@@ -47,8 +49,10 @@ class _AutoCompleteState extends State<AutoComplete> {
 
     if (picked != null && picked.files.first.bytes != null) {
       var file = picked.files.first;
-      var content =
-          const CsvToListConverter().convert(utf8.decode(file.bytes!));
+      var content = const CsvToListConverter()
+          .convert(utf8.decode(file.bytes!))
+          .map((e) => e.map((e) => e.toString()).toList())
+          .toList();
       setState(() {
         if (_isValidCsv(content)) {
           _log("'${file.name}' is a valid CSV");
@@ -68,19 +72,17 @@ class _AutoCompleteState extends State<AutoComplete> {
     }
   }
 
-  Future<List<String>> _postRequest(Uri endpoint, List<String> bodies) async {
+  Future<List<String>> _postRequest(Uri endpoint, List<Object> bodies) async {
     List<String> responses = [];
+    const encoder = JsonEncoder.withIndent("    ");
     for (final (idx, body) in bodies.indexed) {
       _log("Querying input ${idx + 1} out of ${bodies.length}...");
+      var encoded = encoder.convert(body);
       var response = await http.post(endpoint,
           headers: {
             "Content-Type": "application/json",
           },
-          body: json.encode({
-            "inputPrompt": body,
-            "keep-only-code": false,
-            "maxOutputToken": 1024,
-          }));
+          body: encoded);
       if (response.statusCode == 200) {
         responses.add(response.body);
       } else {
@@ -105,26 +107,47 @@ class _AutoCompleteState extends State<AutoComplete> {
 
   // generate report
   void _generate() async {
-    final colName = _codeController.text;
-    if (colName.isEmpty) {
+    final colCode = _codeController.text;
+    final colFilename = _filenameController.text;
+    if (colCode.isEmpty || colFilename.isEmpty) {
       return _error("Column name can't be empty");
     }
     if (_rowsOfColumns.isEmpty) {
       return _error("Input csv file can't be empty");
     }
-    if (!_rowsOfColumns[0].contains(colName)) {
-      return _error("Colunm '$colName' not found in '$_fileName'");
+
+    final codeIdx = _rowsOfColumns[0].indexOf(colCode);
+    if (codeIdx < 0) {
+      return _error("Colunm '$colCode' not found in '$_fileName'");
+    }
+    final filenameIdx = _rowsOfColumns[0].indexOf(colFilename);
+    if (filenameIdx < 0) {
+      return _error("Colunm '$colFilename' not found in '$_fileName'");
     }
 
-    final colIdx = _rowsOfColumns[0].indexOf(colName);
-    final List<String> bodies = [];
+    final List<Object> requests = [];
     for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
-      final body = _rowsOfColumns[ix][colIdx];
-      bodies.add(body);
+      final prefixSuffix = _rowsOfColumns[ix][codeIdx].split('<|CURSOR|>');
+      if (prefixSuffix.length != 2) {
+        return _error(
+            'code at row $ix does not contain CURSOR token: "<|CURSOR|>"');
+      }
+      final filename = _rowsOfColumns[ix][filenameIdx];
+      var request = {
+        "additionalProperties": {
+          "prefix": prefixSuffix[0],
+          "suffix": prefixSuffix[1],
+          "context": json.encode({
+            "current_file_path": filename,
+            "windows": [],
+          }),
+        }
+      };
+      requests.add(request);
     }
 
     try {
-      _postRequest(Uri.parse(_endpiont), bodies).then((responses) {
+      _postRequest(Uri.parse(_endpiont), requests).then((responses) {
         List<List<dynamic>> result = List.from(_rowsOfColumns);
         result[0].add("output");
         for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
