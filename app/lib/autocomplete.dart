@@ -6,25 +6,29 @@ import 'package:flutter/material.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:http/http.dart' as http;
 
-class BlockGen extends StatefulWidget {
-  const BlockGen({super.key});
+class AutoComplete extends StatefulWidget {
+  const AutoComplete({super.key});
 
   @override
-  State<BlockGen> createState() => _BlockGenState();
+  State<AutoComplete> createState() => _AutoCompleteState();
 }
 
-class _BlockGenState extends State<BlockGen> {
+class _AutoCompleteState extends State<AutoComplete> {
   // holds user uploaded csv
   List<List<dynamic>> _rowsOfColumns = [];
-  // column name that contains the request
-  final _colNameController = TextEditingController(text: "prompt");
+  // columns that contains the request
+  // both prefix and suffix
+  final _codeController = TextEditingController(text: "code");
+  // filename of the current file
+  final _filenameController = TextEditingController(text: "filename");
   // uploaded file name to display to the user
   String _fileName = "not selected";
-  final _endpiont = "/blockgen";
-  final _reportFilenameController = TextEditingController(text: "blockgen-report.csv");
+  final _endpiont = "/autocomplete";
+  final _reportFilenameController =
+      TextEditingController(text: "autocomplete-report.csv");
   String _userLog = '';
-  final _sampleBlockgenInput =
-      "id,prompt\r\n0,Implement quick sort in Rust\r\n1,Implement binary search in Go\r\n";
+  final _sampleAutocompleteInput =
+      'id,code,filename\r\n0,"// print hello world\ndef main(): <|CURSOR|>\nif __name__ == \'__main__\':\n    main()",main.py\r\n1,"public with sharing class User {\n    public String name;\n    public User(String name) {\n        this.name = name;\n    }\n\n    public static getUsers() {\n        <|CURSOR|>\n    }\n}",User.cls';
 
   bool _isValidCsv(List<List<dynamic>> content) {
     if (content.length < 3) return false;
@@ -101,7 +105,7 @@ class _BlockGenState extends State<BlockGen> {
 
   // generate report
   void _generate() async {
-    final colName = _colNameController.text;
+    final colName = _codeController.text;
     if (colName.isEmpty) {
       return _error("Column name can't be empty");
     }
@@ -167,14 +171,14 @@ class _BlockGenState extends State<BlockGen> {
             ),
             GestureDetector(
               child: const Text(
-                "blockgen-sample-input.csv",
+                "autocomplete-sample-input.csv",
                 style: TextStyle(
                   color: Colors.blue,
                   decoration: TextDecoration.underline,
                 ),
               ),
               onTap: () => _createAndDownloadFile(
-                  _sampleBlockgenInput, "blockgen-sample-input.csv"),
+                  _sampleAutocompleteInput, "autocomplete-sample-input.csv"),
             )
           ],
         ),
@@ -186,15 +190,41 @@ class _BlockGenState extends State<BlockGen> {
           child: Form(
             child: TextFormField(
               autovalidateMode: AutovalidateMode.always,
-              controller: _colNameController,
+              controller: _codeController,
               decoration: const InputDecoration(
-                labelText: 'Input column',
+                labelText: 'prefix/suffix column',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 return (value == null ||
                         value.isEmpty ||
                         value == "output" ||
+                        value == _filenameController.text ||
+                        value.contains(RegExp(r'\s')))
+                    ? "not a valid column name"
+                    : null;
+              },
+            ),
+          ),
+        ),
+        const SizedBox(
+          height: 24,
+        ),
+        SizedBox(
+          width: 256,
+          child: Form(
+            child: TextFormField(
+              autovalidateMode: AutovalidateMode.always,
+              controller: _filenameController,
+              decoration: const InputDecoration(
+                labelText: 'filename column',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                return (value == null ||
+                        value.isEmpty ||
+                        value == "output" ||
+                        value == _codeController.text ||
                         value.contains(RegExp(r'\s')))
                     ? "not a valid column name"
                     : null;

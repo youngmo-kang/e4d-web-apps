@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:report/autocomplete.dart';
 import 'package:report/blockgen.dart';
 
 void main() {
@@ -10,9 +11,29 @@ class ReportApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'E4D Web App',
-      home: BlockGen(),
+      home: DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              bottom: const TabBar(
+                tabs: [
+                  Tab(
+                    text: "BlockGen",
+                  ),
+                  Tab(text: "Autocomplete"),
+                ],
+              ),
+              title: const Text("E4D Repor Generation"),
+            ),
+            body: const TabBarView(
+              children: [
+                BlockGen(),
+                AutoComplete(),
+              ],
+            ),
+          )),
     );
   }
 }
