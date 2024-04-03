@@ -25,8 +25,8 @@ class _TestCaseGenState extends State<TestCaseGen> {
   final _reportFilenameController =
       TextEditingController(text: "testcasegen-report.csv");
   String _userLog = '';
-  final _sampleBlockgenInput = '''code,idx
-"public with sharing class CryptoUtils {
+  final _sampleBlockgenInput = '''idx,code,filename\r\n'''
+      '''0,"public with sharing class CryptoUtils {
   @AuraEnabled
   public static String decodeAndDecrypt(String encryptedBase64) {
     Blob cryptoKey = EncodingUtil.base64Decode(Constants.CRYPTO_SYMMETRIC_KEY);
@@ -38,8 +38,8 @@ class _TestCaseGenState extends State<TestCaseGen> {
     );
     return decrypted.toString();
   }
-}",0
-"public with sharing class CryptoUtils {
+}",CryptoUtils.cls\r\n'''
+      '''1,"public with sharing class CryptoUtils {
   @AuraEnabled
   public static String encryptAndEncode(String unencrypted) {
     Blob cryptoKey = EncodingUtil.base64Decode(Constants.CRYPTO_SYMMETRIC_KEY);
@@ -50,8 +50,7 @@ class _TestCaseGenState extends State<TestCaseGen> {
     );
     return EncodingUtil.base64Encode(encrypted);
   }
-}",1
-''';
+}",CryptoUtils.cls''';
 
   bool _isValidCsv(List<List<dynamic>> content) {
     if (content.length < 2) return false; // at least one header and one body
