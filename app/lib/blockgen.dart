@@ -72,6 +72,10 @@ class _BlockGenState extends State<BlockGen> {
 
   Future<List<String>> _postPromptDefense(
       Uri endpoint, List<String> bodies) async {
+    if (!_promptDefense) {
+      return Future.value(
+          bodies.map((_) => json.encode({"score": 0.0})).toList());
+    }
     List<String> responses = [];
     for (final (idx, body) in bodies.indexed) {
       _log("Querying prompt defense ${idx + 1} out of ${bodies.length}...");
@@ -166,8 +170,8 @@ class _BlockGenState extends State<BlockGen> {
 
       final csv = const ListToCsvConverter().convert(result);
       _createAndDownloadFile(csv, _reportFilenameController.text);
-    } catch (e) {
-      return _error(e.toString());
+    } catch (e, stacktrace) {
+      return _error('$e');
     }
   }
 
@@ -275,9 +279,9 @@ class _BlockGenState extends State<BlockGen> {
                   _log("Trigger prompt defense model: $s");
                 }),
             const SizedBox(
-              width: 20,
+              width: 10,
             ),
-            const Text("Trigget prompt defense model"),
+            const Text("Trigger prompt defense model"),
           ],
         ),
         const SizedBox(
