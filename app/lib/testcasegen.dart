@@ -22,8 +22,13 @@ class _TestCaseGenState extends State<TestCaseGen> {
   // uploaded file name to display to the user
   String _fileName = "not selected";
   final _endpiont = "/blockgen";
+  final _promptDefenseEndpoint = "/prompt-defense";
   final _reportFilenameController =
       TextEditingController(text: "testcasegen-report.csv");
+  bool _promptDefense = true;
+  final double _promptDefenseThreshold = 0.5;
+  final String _genericResponse =
+      "We couldn't generate an output for the text input that you provided. Please update the text and try again.";
   String _userLog = '';
   final _sampleBlockgenInput = '''idx,code,filename\r\n'''
       '''0,"public with sharing class CryptoUtils {
@@ -90,7 +95,34 @@ class _TestCaseGenState extends State<TestCaseGen> {
     }
   }
 
-  Future<List<String>> _postRequest(Uri endpoint, List<String> bodies) async {
+  Future<List<String>> _postPromptDefense(
+      Uri endpoint, List<String> bodies) async {
+    if (!_promptDefense) {
+      return Future.value(
+          bodies.map((_) => json.encode({"score": 0.0})).toList());
+    }
+    List<String> responses = [];
+    for (final (idx, body) in bodies.indexed) {
+      _log("Querying prompt defense ${idx + 1} out of ${bodies.length}...");
+      var response = await http.post(endpoint,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: json.encode({
+            "text": body,
+          }));
+      if (response.statusCode == 200) {
+        responses.add(response.body);
+      } else {
+        const msg = 'Failed to query';
+        _error(msg);
+        throw Exception(msg);
+      }
+    }
+    return responses;
+  }
+
+  Future<List<String>> _postModel(Uri endpoint, List<String> bodies) async {
     List<String> responses = [];
     for (final (idx, body) in bodies.indexed) {
       _log("Querying input ${idx + 1} out of ${bodies.length}...");
@@ -160,18 +192,25 @@ write unit test for class $filename''';
     }
 
     try {
-      _postRequest(Uri.parse(_endpiont), bodies).then((responses) {
-        List<List<dynamic>> result = List.from(_rowsOfColumns);
-        result[0].add("output");
-        for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
-          result[ix].add(responses[ix - 1]);
+      final responses = await Future.wait([
+        _postModel(Uri.parse(_endpiont), bodies),
+        _postPromptDefense(Uri.parse(_promptDefenseEndpoint), bodies)
+      ]);
+      List<List<dynamic>> result = List.from(_rowsOfColumns);
+      result[0].add("output");
+      for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
+        final response = json.decode(responses[0][ix - 1]);
+        final score = double.parse(json.decode(responses[1][ix - 1])['score']);
+        if (score > _promptDefenseThreshold) {
+          response["completions"][0]["completionText"] = _genericResponse;
         }
+        result[ix].add(json.encode(response));
+      }
 
-        final csv = const ListToCsvConverter().convert(result);
-        _createAndDownloadFile(csv, _reportFilenameController.text);
-      });
-    } catch (e) {
-      return _error(e.toString());
+      final csv = const ListToCsvConverter().convert(result);
+      _createAndDownloadFile(csv, _reportFilenameController.text);
+    } catch (e, stacktrace) {
+      return _error('$e');
     }
   }
 
@@ -287,6 +326,23 @@ write unit test for class $filename''';
               ),
             ),
           ),
+        ),
+        const SizedBox(
+          height: 24,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Checkbox(
+                value: _promptDefense,
+                onChanged: (val) {
+                  final promptDefense = val!;
+                  _promptDefense = promptDefense;
+                  final String s = promptDefense ? "ON" : "OFF";
+                  _log("Trigger prompt defense model: $s");
+                }),
+            const Text("Trigger prompt defense model"),
+          ],
         ),
         const SizedBox(
           height: 24,

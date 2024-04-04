@@ -278,9 +278,6 @@ class _BlockGenState extends State<BlockGen> {
                   final String s = promptDefense ? "ON" : "OFF";
                   _log("Trigger prompt defense model: $s");
                 }),
-            const SizedBox(
-              width: 10,
-            ),
             const Text("Trigger prompt defense model"),
           ],
         ),
