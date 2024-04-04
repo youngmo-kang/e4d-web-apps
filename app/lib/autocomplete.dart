@@ -178,6 +178,15 @@ class _AutoCompleteState extends State<AutoComplete> {
         const SizedBox(
           height: 24,
         ),
+        const Text(
+          "codegen25-apex-lwc-7B-2k-triton-Dev-AutoComplete-0.10.0-20240314",
+          style: TextStyle(
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(
+          height: 24,
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

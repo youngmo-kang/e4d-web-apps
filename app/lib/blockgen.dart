@@ -191,6 +191,15 @@ class _BlockGenState extends State<BlockGen> {
         const SizedBox(
           height: 24,
         ),
+        const Text(
+          "codegen25-apex-7B-8K-triton-Dev-BlockGen-0.10.0-20240312 with CodeExplanation",
+          style: TextStyle(
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(
+          height: 24,
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
