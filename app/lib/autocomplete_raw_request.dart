@@ -6,34 +6,31 @@ import 'package:flutter/material.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:http/http.dart' as http;
 
-class AutoComplete extends StatefulWidget {
-  const AutoComplete({super.key});
+class AutoCompleteRawRequest extends StatefulWidget {
+  const AutoCompleteRawRequest({super.key});
 
   @override
-  State<AutoComplete> createState() => _AutoCompleteState();
+  State<AutoCompleteRawRequest> createState() => _AutoCompleteRawRequestState();
 }
 
-class _AutoCompleteState extends State<AutoComplete> {
+class _AutoCompleteRawRequestState extends State<AutoCompleteRawRequest> {
   // holds user uploaded csv
   List<List<String>> _rowsOfColumns = [];
   // columns that contains the request
-  // both prefix and suffix
-  final _codeController = TextEditingController(text: "code");
-  // filename of the current file
-  final _filenameController = TextEditingController(text: "filename");
+  // raw request, e.g., additionalProperties
+  final _requestController =
+      TextEditingController(text: "additionalProperties");
   // uploaded file name to display to the user
   String _fileName = "not selected";
   final _endpiont = "/autocomplete";
   final _reportFilenameController =
-      TextEditingController(text: "autocomplete-report.csv");
+      TextEditingController(text: "autocomplete-raw-report.csv");
   String _userLog = '';
   final _sampleAutocompleteInput =
-      'id,code,filename\r\n0,"// print hello world\ndef main(): <|CURSOR|>\nif __name__ == \'__main__\':\n    main()",main.py\r\n1,"public with sharing class User {\n    public String name;\n    public User(String name) {\n        this.name = name;\n    }\n\n    public static getUsers() {\n        <|CURSOR|>\n    }\n}",User.cls';
+      'idx,additionalProperties\r\n0,"{""prefix"": ""public with sharing class User {\\n    public String name;\\n    public User(String name) {\\n        this.name = name;\\n    }\\n\\n    public static getUsers() {\\n        "", ""suffix"": ""\\n    }\\n    \\n\\n\\n        \\n}"", ""context"": ""{\\""current_file_path\\"":\\""./force-app/main/default/classes/User.cls\\"",\\""windows\\"":[{\\""file_path\\"":\\""./force-app/main/default/classes/UserTest.cls\\"",\\""text\\"":\\""@isTest\\\\nprivate class UserTest {\\\\n\\\\n}\\"",\\""similarity\\"":0.07692307692307693},{\\""file_path\\"":\\""./force-app/main/default/lwc/CompOne/CompOne.js\\"",\\""text\\"":\\""import { LightningElement } from \'lwc\';\\\\n\\\\nexport default class CompOne extends LightningElement {\\\\n    doWork() {\\\\n        let users = [\'one\', \'two\', \'three\'];\\\\n        for()\\\\n\\\\n    }\\\\n}\\"",\\""similarity\\"":0.04},{\\""file_path\\"":\\""./force-app/main/default/classes/UserTest.cls-meta.xml\\"",\\""text\\"":\\""<?xml version=\\\\\\""1.0\\\\\\"" encoding=\\\\\\""UTF-8\\\\\\""?>\\\\n<ApexClass xmlns=\\\\\\""http://soap.sforce.com/2006/04/metadata\\\\\\"">\\\\n    <apiVersion>59.0</apiVersion>\\\\n    <status>Active</status>\\\\n</ApexClass>\\"",\\""similarity\\"":0},{\\""file_path\\"":\\""./force-app/main/default/classes/User.cls-meta.xml\\"",\\""text\\"":\\""<?xml version=\\\\\\""1.0\\\\\\"" encoding=\\\\\\""UTF-8\\\\\\""?>\\\\n<ApexClass xmlns=\\\\\\""http://soap.sforce.com/2006/04/metadata\\\\\\"">\\\\n    <apiVersion>59.0</apiVersion>\\\\n    <status>Active</status>\\\\n</ApexClass>\\"",\\""similarity\\"":0}]}""}"\r\n1,"{""prefix"": ""def hello_world():"", ""suffix"": ""if __name__ == \'__main__\':\\n    main()"", ""lang_prefix"": ""<|python|>"", ""context"": ""{\\""current_file_path\\"": \\""/path/to/current/file.py\\"", \\""windows\\"": [{\\""file_path\\"": \\""/path/to/file1.py\\"", \\""text\\"": \\""import os\\\\ndef hello_file1(name):\\\\n    print(\'hello\')\\""}, {\\""file_path\\"": \\""/path/to/file2.py\\"", \\""text\\"": \\""import os\\\\ndef hello_file2(name):\\\\n    print(\'hello\')\\""}, {\\""file_path\\"": \\""/path/to/file3.py\\"", \\""text\\"": \\""import os\\\\ndef hello_file3(name):\\\\n    print(\'hello\')\\""}]}""}"\n';
 
   bool _isValidCsv(List<List<String>> content) {
     if (content.length < 2) return false; // at least one header and one body
-    if (content[0].length < 2)
-      return false; // at least code and filename columns
     return true;
   }
 
@@ -107,42 +104,23 @@ class _AutoCompleteState extends State<AutoComplete> {
 
   // generate report
   void _generate() async {
-    final colCode = _codeController.text;
-    final colFilename = _filenameController.text;
-    if (colCode.isEmpty || colFilename.isEmpty) {
+    final rawRequest = _requestController.text;
+    if (rawRequest.isEmpty) {
       return _error("Column name can't be empty");
     }
     if (_rowsOfColumns.isEmpty) {
       return _error("Input csv file can't be empty");
     }
 
-    final codeIdx = _rowsOfColumns[0].indexOf(colCode);
-    if (codeIdx < 0) {
-      return _error("Colunm '$colCode' not found in '$_fileName'");
-    }
-    final filenameIdx = _rowsOfColumns[0].indexOf(colFilename);
-    if (filenameIdx < 0) {
-      return _error("Colunm '$colFilename' not found in '$_fileName'");
+    final requestIdx = _rowsOfColumns[0].indexOf(rawRequest);
+    if (requestIdx < 0) {
+      return _error("Colunm '$rawRequest' not found in '$_fileName'");
     }
 
     final List<Object> requests = [];
     for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
-      final prefixSuffix = _rowsOfColumns[ix][codeIdx].split('<|CURSOR|>');
-      if (prefixSuffix.length != 2) {
-        return _error(
-            'code at row $ix does not contain CURSOR token: "<|CURSOR|>"');
-      }
-      final filename = _rowsOfColumns[ix][filenameIdx];
-      var request = {
-        "additionalProperties": {
-          "prefix": prefixSuffix[0],
-          "suffix": prefixSuffix[1],
-          "context": json.encode({
-            "current_file_path": filename,
-            "windows": [],
-          }),
-        }
-      };
+      final additionalProperties = json.decode(_rowsOfColumns[ix][requestIdx]);
+      var request = {"additionalProperties": additionalProperties};
       requests.add(request);
     }
 
@@ -203,14 +181,14 @@ class _AutoCompleteState extends State<AutoComplete> {
             ),
             GestureDetector(
               child: const Text(
-                "autocomplete-sample-input.csv",
+                "autocomplete-raw-sample-input.csv",
                 style: TextStyle(
                   color: Colors.blue,
                   decoration: TextDecoration.underline,
                 ),
               ),
-              onTap: () => _createAndDownloadFile(
-                  _sampleAutocompleteInput, "autocomplete-sample-input.csv"),
+              onTap: () => _createAndDownloadFile(_sampleAutocompleteInput,
+                  "autocomplete-raw-sample-input.csv"),
             )
           ],
         ),
@@ -222,41 +200,15 @@ class _AutoCompleteState extends State<AutoComplete> {
           child: Form(
             child: TextFormField(
               autovalidateMode: AutovalidateMode.always,
-              controller: _codeController,
+              controller: _requestController,
               decoration: const InputDecoration(
-                labelText: 'prefix/suffix column',
+                labelText: 'request column',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 return (value == null ||
                         value.isEmpty ||
                         value == "output" ||
-                        value == _filenameController.text ||
-                        value.contains(RegExp(r'\s')))
-                    ? "not a valid column name"
-                    : null;
-              },
-            ),
-          ),
-        ),
-        const SizedBox(
-          height: 24,
-        ),
-        SizedBox(
-          width: 256,
-          child: Form(
-            child: TextFormField(
-              autovalidateMode: AutovalidateMode.always,
-              controller: _filenameController,
-              decoration: const InputDecoration(
-                labelText: 'filename column',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                return (value == null ||
-                        value.isEmpty ||
-                        value == "output" ||
-                        value == _codeController.text ||
                         value.contains(RegExp(r'\s')))
                     ? "not a valid column name"
                     : null;
