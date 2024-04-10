@@ -119,9 +119,14 @@ class _AutoCompleteRawRequestState extends State<AutoCompleteRawRequest> {
 
     final List<Object> requests = [];
     for (var ix = 1; ix < _rowsOfColumns.length; ++ix) {
-      final additionalProperties = json.decode(_rowsOfColumns[ix][requestIdx]);
-      var request = {"additionalProperties": additionalProperties};
-      requests.add(request);
+      try {
+        final additionalProperties =
+            json.decode(_rowsOfColumns[ix][requestIdx]);
+        var request = {"additionalProperties": additionalProperties};
+        requests.add(request);
+      } catch (e) {
+        return _error('Parsing input ${_rowsOfColumns[ix][requestIdx]}: $e');
+      }
     }
 
     try {
