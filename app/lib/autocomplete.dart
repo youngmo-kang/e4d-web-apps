@@ -179,7 +179,7 @@ class _AutoCompleteState extends State<AutoComplete> {
           height: 24,
         ),
         const Text(
-          "codegen25-apex-lwc-7B-2k-triton-Dev-AutoComplete-0.10.0-20240314",
+          "codegen25-apex-lwc-7B-8k-triton-Dev-AutoComplete-0.11.0-20240415",
           style: TextStyle(
             fontSize: 16,
           ),
